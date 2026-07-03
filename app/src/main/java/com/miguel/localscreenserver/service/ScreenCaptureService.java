@@ -118,8 +118,7 @@ public class ScreenCaptureService extends Service {
 
                 }
 
-                // 50 ms = 20 FPS
-                handler.postDelayed(this, 30);
+                handler.postDelayed(this, 50);
 
             }
 

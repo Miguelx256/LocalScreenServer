@@ -34,14 +34,14 @@ public class ScreenCaptureSession {
         DisplayMetrics metrics = new DisplayMetrics();
         wm.getDefaultDisplay().getRealMetrics(metrics);
 
-        int width = metrics.widthPixels / 2;
-        int height = metrics.heightPixels / 2;
+        int width = (int)(metrics.widthPixels * 0.66f);
+        int height = (int)(metrics.heightPixels * 0.66f);
 
-        imageReader = ImageReader.newInstance(
+        ImageReader.newInstance(
                 width,
                 height,
                 PixelFormat.RGBA_8888,
-                2);
+                3);
 
         virtualDisplay =
                 mediaProjection.createVirtualDisplay(

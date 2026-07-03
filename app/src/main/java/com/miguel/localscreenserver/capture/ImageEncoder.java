@@ -13,7 +13,7 @@ public class ImageEncoder {
 
         bitmap.compress(
                 Bitmap.CompressFormat.JPEG,
-                60,
+                85,
                 output);
 
         return output.toByteArray();

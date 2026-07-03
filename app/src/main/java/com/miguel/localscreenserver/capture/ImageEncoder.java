@@ -6,10 +6,12 @@ import java.io.ByteArrayOutputStream;
 
 public class ImageEncoder {
 
-    public static byte[] toJpeg(Bitmap bitmap) {
+    private static final ByteArrayOutputStream output =
+            new ByteArrayOutputStream(512 * 1024);
 
-        ByteArrayOutputStream output =
-                new ByteArrayOutputStream();
+    public static synchronized byte[] toJpeg(Bitmap bitmap) {
+
+        output.reset();
 
         bitmap.compress(
                 Bitmap.CompressFormat.JPEG,

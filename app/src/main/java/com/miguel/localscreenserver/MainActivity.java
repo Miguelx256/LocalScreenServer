@@ -10,8 +10,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.miguel.localscreenserver.capture.ScreenCaptureManager;
-import com.miguel.localscreenserver.server.WebServer;
-import com.miguel.localscreenserver.service.ScreenCaptureService;
+import com.miguel.localscreenserver.serverv2.WebServerV2;
+import com.miguel.localscreenserver.service.ScreenCaptureServiceV2;
 import com.miguel.localscreenserver.utils.NetworkUtils;
 
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnStart;
 
-    private WebServer server;
+    private WebServerV2 server;
     private ScreenCaptureManager captureManager;
 
     @Override
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnStart.setOnClickListener(v -> {
 
-            if (!ScreenCaptureService.running) {
+            if (server == null) {
 
                 captureManager.requestCapture(this);
 
@@ -73,33 +73,40 @@ public class MainActivity extends AppCompatActivity {
 
             if (resultCode == Activity.RESULT_OK && data != null) {
 
-                try {
-
-                    if (server == null) {
-
-                        server = new WebServer();
-                        server.start();
-
-                    }
-
-                } catch (IOException e) {
-
-                    txtStatus.setText("Error iniciando servidor");
-
-                    return;
-
-                }
-
                 Intent serviceIntent =
-                        new Intent(this, ScreenCaptureService.class);
+                        new Intent(this, ScreenCaptureServiceV2.class);
 
                 serviceIntent.putExtra("resultCode", resultCode);
                 serviceIntent.putExtra("data", data);
 
+                // 1. Primero inicia el servicio
                 startForegroundService(serviceIntent);
 
-                txtStatus.setText("Servidor iniciado");
-                btnStart.setText("Detener servidor");
+                // 2. Espera a que el servicio cree CaptureEngine
+                new android.os.Handler(getMainLooper()).postDelayed(() -> {
+
+                    try {
+
+                        if (server == null) {
+
+                            server = new WebServerV2(
+                                    ScreenCaptureServiceV2.engine.getLatestFrame());
+
+                            server.start();
+
+                        }
+
+                        txtStatus.setText("Servidor iniciado");
+                        btnStart.setText("Detener servidor");
+
+                    } catch (IOException e) {
+
+                        txtStatus.setText("Error iniciando servidor");
+                        e.printStackTrace();
+
+                    }
+
+                }, 500);
 
             } else {
 
@@ -120,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        stopService(new Intent(this, ScreenCaptureService.class));
+        stopService(new Intent(this, ScreenCaptureServiceV2.class));
 
         txtStatus.setText("Servidor detenido");
         btnStart.setText("Iniciar servidor");

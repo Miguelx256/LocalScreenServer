@@ -17,9 +17,11 @@ public class ScreenCaptureSession {
 
     private final Context context;
     private final MediaProjection mediaProjection;
-
     private ImageReader imageReader;
     private VirtualDisplay virtualDisplay;
+    private Bitmap reusableBitmap;
+    private int captureWidth;
+    private int captureHeight;
 
     public ScreenCaptureSession(Context context, MediaProjection projection) {
         this.context = context;
@@ -37,11 +39,20 @@ public class ScreenCaptureSession {
         int width = (int)(metrics.widthPixels * 0.66f);
         int height = (int)(metrics.heightPixels * 0.66f);
 
-        ImageReader.newInstance(
+        imageReader = ImageReader.newInstance(
                 width,
                 height,
                 PixelFormat.RGBA_8888,
                 3);
+
+        captureWidth = width;
+        captureHeight = height;
+
+        reusableBitmap = Bitmap.createBitmap(
+                captureWidth,
+                captureHeight,
+                Bitmap.Config.ARGB_8888
+        );
 
         virtualDisplay =
                 mediaProjection.createVirtualDisplay(
@@ -66,31 +77,11 @@ public class ScreenCaptureSession {
 
         ByteBuffer buffer = plane.getBuffer();
 
-        int pixelStride = plane.getPixelStride();
-        int rowStride = plane.getRowStride();
-
-        int rowPadding = rowStride - pixelStride * image.getWidth();
-
-        int width = image.getWidth();
-        int height = image.getHeight();
-
-        Bitmap bitmap = Bitmap.createBitmap(
-                width + rowPadding / pixelStride,
-                height,
-                Bitmap.Config.ARGB_8888
-        );
-
-        bitmap.copyPixelsFromBuffer(buffer);
+        reusableBitmap.copyPixelsFromBuffer(buffer);
 
         image.close();
 
-        return Bitmap.createBitmap(
-                bitmap,
-                0,
-                0,
-                width,
-                height
-        );
+        return reusableBitmap;
     }
 
     public void stop() {

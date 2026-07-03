@@ -1,15 +1,19 @@
-package com.miguel.localscreenserver.server;
+package com.miguel.localscreenserver.serverv2;
 
-import com.miguel.localscreenserver.model.FrameBuffer;
-
-import java.io.ByteArrayInputStream;
+import com.miguel.localscreenserver.capturev2.LatestFrame;
 
 import fi.iki.elonen.NanoHTTPD;
 
-public class WebServer extends NanoHTTPD {
+public class WebServerV2 extends NanoHTTPD {
 
-    public WebServer() {
+    private final LatestFrame latestFrame;
+
+    public WebServerV2(LatestFrame latestFrame) {
+
         super(8080);
+
+        this.latestFrame = latestFrame;
+
     }
 
     @Override
@@ -17,49 +21,45 @@ public class WebServer extends NanoHTTPD {
 
         String uri = session.getUri();
 
-        // Imagen única
         if (uri.equals("/frame")) {
 
-            byte[] jpeg = FrameBuffer.getFrame();
+            byte[] jpeg = latestFrame.getJpeg();
 
             if (jpeg == null) {
+
                 return newFixedLengthResponse(
                         Response.Status.NO_CONTENT,
                         "text/plain",
-                        "Sin imagen");
+                        "No Frame");
+
             }
 
             return newFixedLengthResponse(
                     Response.Status.OK,
                     "image/jpeg",
-                    new ByteArrayInputStream(jpeg),
+                    new java.io.ByteArrayInputStream(jpeg),
                     jpeg.length);
+
         }
 
         if (uri.equals("/stream")) {
 
-            Response response =
-                    newChunkedResponse(
-                            Response.Status.OK,
-                            "multipart/x-mixed-replace; boundary=frame",
-                            new MJPEGStreamer());
+            return newChunkedResponse(
+                    Response.Status.OK,
+                    "multipart/x-mixed-replace; boundary=frame",
+                    new MJPEGStreamerV2(latestFrame));
 
-            response.addHeader("Cache-Control", "no-cache");
-            response.addHeader("Pragma", "no-cache");
-            response.addHeader("Connection", "close");
-
-            return response;
         }
 
         String html =
                 "<html>" +
                         "<head>" +
-                        "<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1'>" +
+                        "<meta name='viewport' content='width=device-width,initial-scale=1'>" +
                         "<style>" +
                         "html,body{" +
                         "margin:0;" +
                         "padding:0;" +
-                        "background:black;" +
+                        "background:#000;" +
                         "overflow:hidden;" +
                         "}" +
                         "#screen{" +
@@ -74,9 +74,8 @@ public class WebServer extends NanoHTTPD {
                         "</body>" +
                         "</html>";
 
-        return newFixedLengthResponse(
-                Response.Status.OK,
-                "text/html",
-                html);
+        return newFixedLengthResponse(html);
+
     }
+
 }
